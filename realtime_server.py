@@ -16,6 +16,7 @@ import scipy.signal
 from openai import OpenAI, AsyncOpenAI
 from pydantic import BaseModel, Field
 from typing import Generator
+from llm_processor import get_llm_processor
 
 # Configure logging
 logging.basicConfig(
@@ -31,7 +32,7 @@ if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY is not set in environment variables.")
     raise EnvironmentError("OPENAI_API_KEY is not set.")
 
-openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+llm_processor = get_llm_processor("gpt") 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -231,7 +232,7 @@ class ReadabilityResponse(BaseModel):
     "/readability",
     response_model=ReadabilityResponse,
     summary="Enhance Text Readability",
-    description="Improve the readability of the provided text by enhancing structure, clarity, and flow without altering the original meaning."
+    description="Improve the readability of the provided text using the configured LLM."
 )
 async def enhance_readability(request: ReadabilityRequest):
     prompt = PROMPTS.get('readability-enhance')
@@ -239,25 +240,9 @@ async def enhance_readability(request: ReadabilityRequest):
         raise HTTPException(status_code=500, detail="Readability prompt not found.")
 
     try:
-        # Initiate the streaming request to OpenAI
-        response = await openai_client.chat.completions.create(
-            model="gpt-4o",  # Ensure this model is correct and available
-            messages=[
-                {"role": "user", "content": f"{prompt}\n\n{request.text}"}
-            ],
-            stream=True
-        )
-
         async def text_generator():
-            nonlocal response
-            async for chunk in response:
-                if not chunk.choices:
-                    continue
-                choice = chunk.choices[0]
-                if choice.delta:
-                    part = choice.delta.content
-                    if part:
-                        yield part
+            async for part in llm_processor.process_text(request.text, prompt):
+                yield part
 
         return StreamingResponse(text_generator(), media_type="text/plain")
 

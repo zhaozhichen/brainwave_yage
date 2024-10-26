@@ -5,3 +5,4 @@ python-multipart
 numpy
 websockets
 scipy
+google-generativeai
