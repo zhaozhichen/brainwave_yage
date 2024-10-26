@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brainwave</title>
+    <!-- Add viewport meta tag -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;  /* reduced margin for mobile */
+            padding: 20px;      /* reduced padding for mobile */
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;        /* ensure container doesn't overflow on mobile */
+        }
+        h1 {
+            font-size: 2rem;   /* slightly smaller on mobile */
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #1d1d1f;
+        }
+        #recordButton {
+            width: 100px;      /* slightly larger touch target */
+            height: 100px;     /* slightly larger touch target */
+            border-radius: 50%;
+            background-color: #007AFF;
+            border: none;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #recordButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #recordButton.recording {
+            background-color: #FF3B30;
+            animation: pulse 2s infinite;
+        }
+        #transcript {
+            min-height: 150px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 30px;
+            background: #fafafa;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Add new styles for the copy button */
+        .transcript-container {
+            position: relative;
+        }
+
+        #copyButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        #copyButton:hover {
+            background: #0056b3;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Add media queries for different screen sizes */
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px auto;
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+                margin-bottom: 20px;
+            }
+
+            #transcript {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Brainwave</h1>
+        <!-- Add this after the h1 element -->
+        <div id="timer" style="text-align: center; margin-bottom: 15px; font-size: 1.2rem;">00:00</div>
+        <button id="recordButton">Start</button>
+        <div class="transcript-container">
+            <div id="transcript"></div>
+            <button id="copyButton">Copy</button>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let audioContext;
+        let processor;
+        let source;
+        let isRecording = false;
+        let timerInterval;
+        let startTime;
+        let audioBuffer = new Int16Array(0); // Initialize global audioBuffer
+        
+        const recordButton = document.getElementById('recordButton');
+        const transcript = document.getElementById('transcript');
+        const copyButton = document.getElementById('copyButton');
+        const targetSeconds = 5; // Set the duration for each audio chunk
+        
+        // Connect to WebSocket server
+        function connect() {
+            ws = new WebSocket(`wss://${window.location.host}/ws`);
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'text') {
+                    if (data.isNewResponse) {
+                        transcript.textContent = data.content;
+                        stopTimer();  // Stop timer when response arrives
+                    } else {
+                        transcript.textContent += data.content;
+                    }
+                }
+            };
+            
+            ws.onclose = function() {
+                setTimeout(connect, 1000);
+            };
+        }
+        
+        connect();
+        
+        // Add utility function
+        function chunkArray(array, chunkSize) {
+            const chunks = [];
+            for (let i = 0; i < array.length; i += chunkSize) {
+                chunks.push(array.slice(i, i + chunkSize));
+            }
+            return chunks;
+        }
+
+        // Initialize audio context
+        async function initAudio(stream) {
+            audioContext = new AudioContext();
+            console.log('Audio context sample rate:', audioContext.sampleRate);
+            
+            source = audioContext.createMediaStreamSource(stream);
+            
+            // Create processor with buffer size 4096
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+            
+            // Calculate target samples for 5 seconds
+            // Assuming 24kHz sample rate as per server's AudioProcessor
+            const targetSamples = audioContext.sampleRate * targetSeconds;
+            
+            processor.onaudioprocess = (e) => {
+                if (!isRecording) return;
+                
+                // Get audio data from input channel
+                const inputData = e.inputBuffer.getChannelData(0);
+                console.log(`Processing audio buffer of ${inputData.length} samples`);
+                
+                // Convert Float32Array to Int16Array (PCM16)
+                const pcmData = new Int16Array(inputData.length);
+                for (let i = 0; i < inputData.length; i++) {
+                    pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
+                }
+                
+                // Concatenate the new pcmData to audioBuffer
+                const combinedBuffer = new Int16Array(audioBuffer.length + pcmData.length);
+                combinedBuffer.set(audioBuffer);
+                combinedBuffer.set(pcmData, audioBuffer.length);
+                audioBuffer = combinedBuffer;
+                
+                console.log(`Accumulated samples: ${audioBuffer.length}/${targetSamples}`);
+                
+                // Check if we've accumulated enough samples
+                if (audioBuffer.length >= targetSamples) {
+                    const sendBuffer = audioBuffer.slice(0, targetSamples);
+                    audioBuffer = audioBuffer.slice(targetSamples);
+                    
+                    if (ws.readyState === WebSocket.OPEN) {
+                        console.log(`Sending 5-second chunk (${sendBuffer.length} samples)`);
+                        ws.send(sendBuffer.buffer);
+                    } else {
+                        console.error(`WebSocket not open. ReadyState: ${ws.readyState}`);
+                    }
+                }
+            };
+            
+            // Connect nodes
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+        }
+        
+        // Timer functions
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsedTime = Date.now() - startTime;
+                const minutes = Math.floor(elapsedTime / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function resetTimer() {
+            stopTimer();
+            document.getElementById('timer').textContent = '00:00';
+        }
+
+        // Handle recording
+        recordButton.onclick = async function() {
+            if (!isRecording) {
+                try {
+                    // Clear transcript when starting new recording
+                    transcript.textContent = '';
+                    
+                    // Reset WebSocket connection for new recording
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.close();
+                    }
+                    connect();
+                    
+                    // Wait for WebSocket to connect
+                    while (ws.readyState !== WebSocket.OPEN) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    // Start recording
+                    console.log('Requesting microphone access...');
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            channelCount: 1,  // mono
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    });
+                    console.log('Microphone access granted');
+                    
+                    if (!audioContext) {
+                        await initAudio(stream);
+                    } else {
+                        // Reconnect the source and processor if they are disconnected
+                        if (!processor) {
+                            processor = audioContext.createScriptProcessor(4096, 1, 1);
+                            // Copy the entire onaudioprocess function from initAudio
+                            processor.onaudioprocess = (e) => {
+                                if (!isRecording) return;
+                                
+                                // Get audio data from input channel
+                                const inputData = e.inputBuffer.getChannelData(0);
+                                console.log(`Processing audio buffer of ${inputData.length} samples`);
+                                
+                                // Convert Float32Array to Int16Array (PCM16)
+                                const pcmData = new Int16Array(inputData.length);
+                                for (let i = 0; i < inputData.length; i++) {
+                                    pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
+                                }
+                                
+                                // Concatenate the new pcmData to audioBuffer
+                                const combinedBuffer = new Int16Array(audioBuffer.length + pcmData.length);
+                                combinedBuffer.set(audioBuffer);
+                                combinedBuffer.set(pcmData, audioBuffer.length);
+                                audioBuffer = combinedBuffer;
+                                
+                                console.log(`Accumulated samples: ${audioBuffer.length}/${targetSamples}`);
+                                
+                                // Check if we've accumulated enough samples
+                                if (audioBuffer.length >= targetSamples) {
+                                    const sendBuffer = audioBuffer.slice(0, targetSamples);
+                                    audioBuffer = audioBuffer.slice(targetSamples);
+                                    
+                                    if (ws.readyState === WebSocket.OPEN) {
+                                        console.log(`Sending 5-second chunk (${sendBuffer.length} samples)`);
+                                        ws.send(sendBuffer.buffer);
+                                    } else {
+                                        console.error(`WebSocket not open. ReadyState: ${ws.readyState}`);
+                                    }
+                                }
+                            };
+                            source = audioContext.createMediaStreamSource(stream);
+                            source.connect(processor);
+                            processor.connect(audioContext.destination);
+                        }
+                    }
+                    
+                    isRecording = true;
+                    await ws.send(JSON.stringify({ type: 'start_recording' }));
+                    
+                    startTimer();  // Start the timer when recording begins
+                    recordButton.textContent = 'Stop';
+                    recordButton.classList.add('recording');
+                    
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    alert('Error accessing microphone: ' + error.message);
+                }
+            } else {
+                console.log('Stopping recording...');
+                isRecording = false;
+                
+                stopTimer();
+                resetTimer();
+                
+                // Send any remaining audio samples in the buffer
+                if (audioBuffer && audioBuffer.length > 0) {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        console.log(`Sending final chunk (${audioBuffer.length} samples)`);
+                        ws.send(audioBuffer.buffer);
+                        // Clear the buffer after sending
+                        audioBuffer = new Int16Array(0);
+                    } else {
+                        console.error(`WebSocket not open. ReadyState: ${ws.readyState}`);
+                    }
+                }
+                
+                // Introduce a slight delay to ensure all audio chunks are sent
+                await new Promise(resolve => setTimeout(resolve, 500));  // 500ms delay
+                
+                console.log('Sending stop_recording signal to server...');
+                await ws.send(JSON.stringify({ type: 'stop_recording' }));
+                console.log('Stop recording signal sent');
+                
+                recordButton.textContent = 'Start';
+                recordButton.classList.remove('recording');
+            }
+        };
+        
+        // Copy functionality
+        copyButton.onclick = async function() {
+            try {
+                await navigator.clipboard.writeText(transcript.textContent);
+                const originalText = copyButton.textContent;
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = transcript.textContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        };
+    </script>
+</body>
+</html>
