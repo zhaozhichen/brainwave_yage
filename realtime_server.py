@@ -2,9 +2,9 @@ import asyncio
 import json
 import os
 import numpy as np
-from fastapi import FastAPI, WebSocket, Request
+from fastapi import FastAPI, WebSocket, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 import uvicorn
 import logging
 from prompts import PROMPTS
@@ -13,6 +13,9 @@ from starlette.websockets import WebSocketState
 import wave
 import datetime
 import scipy.signal
+from openai import OpenAI, AsyncOpenAI
+from pydantic import BaseModel, Field
+from typing import Generator
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +27,11 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    logger.error("OPENAI_API_KEY is not set in environment variables.")
+    raise EnvironmentError("OPENAI_API_KEY is not set.")
+
+openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -208,10 +216,54 @@ async def websocket_endpoint(websocket: WebSocket):
 
         # Wait for both tasks to complete
         await asyncio.gather(receive_task, send_task)
-
+    
     finally:
         await client.close()
         logger.info("OpenAI client connection closed")
+
+class ReadabilityRequest(BaseModel):
+    text: str = Field(..., description="The text to improve readability for.")
+
+class ReadabilityResponse(BaseModel):
+    enhanced_text: str = Field(..., description="The text with improved readability.")
+
+@app.post(
+    "/readability",
+    response_model=ReadabilityResponse,
+    summary="Enhance Text Readability",
+    description="Improve the readability of the provided text by enhancing structure, clarity, and flow without altering the original meaning."
+)
+async def enhance_readability(request: ReadabilityRequest):
+    prompt = PROMPTS.get('readability-enhance')
+    if not prompt:
+        raise HTTPException(status_code=500, detail="Readability prompt not found.")
+
+    try:
+        # Initiate the streaming request to OpenAI
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o",  # Ensure this model is correct and available
+            messages=[
+                {"role": "user", "content": f"{prompt}\n\n{request.text}"}
+            ],
+            stream=True
+        )
+
+        async def text_generator():
+            nonlocal response
+            async for chunk in response:
+                if not chunk.choices:
+                    continue
+                choice = chunk.choices[0]
+                if choice.delta:
+                    part = choice.delta.content
+                    if part:
+                        yield part
+
+        return StreamingResponse(text_generator(), media_type="text/plain")
+
+    except Exception as e:
+        logger.error(f"Error enhancing readability: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing readability enhancement.")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=3005)

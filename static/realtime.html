@@ -49,26 +49,30 @@
             background-color: #FF3B30;
             animation: pulse 2s infinite;
         }
-        #transcript {
+        
+        /* Updated styles for textarea elements and containers */
+        .transcript-container, .enhanced-transcript-container {
+            position: relative;
+            margin-top: 30px;
+        }
+
+        textarea {
+            width: 100%;
             min-height: 150px;
             border: 1px solid #e0e0e0;
             border-radius: 12px;
             padding: 15px;
-            margin-top: 30px;
             background: #fafafa;
             font-size: 1rem;
             line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
         }
 
-        /* Add new styles for the copy button */
-        .transcript-container {
-            position: relative;
-        }
-
-        #copyButton {
+        #copyButton, #copyEnhancedButton {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 15px;
+            right: 15px;
             padding: 8px 12px;
             background: #007AFF;
             color: white;
@@ -76,10 +80,7 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.9rem;
-        }
-
-        #copyButton:hover {
-            background: #0056b3;
+            z-index: 1;
         }
 
         @keyframes pulse {
@@ -100,9 +101,29 @@
                 margin-bottom: 20px;
             }
 
-            #transcript {
+            textarea {
                 padding: 12px;
             }
+        }
+
+        /* Styles for the Readability button */
+        #readabilityButton {
+            width: 150px;
+            height: 40px;
+            border-radius: 8px;
+            background-color: #34C759;
+            border: none;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: background-color 0.3s ease;
+            color: white;
+            font-size: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #readabilityButton:hover {
+            background-color: #28a745;
         }
     </style>
 </head>
@@ -113,8 +134,17 @@
         <div id="timer" style="text-align: center; margin-bottom: 15px; font-size: 1.2rem;">00:00</div>
         <button id="recordButton">Start</button>
         <div class="transcript-container">
-            <div id="transcript"></div>
+            <!-- Changed from <div> to <textarea> and made it editable by removing 'readonly' -->
+            <textarea id="transcript"></textarea>
             <button id="copyButton">Copy</button>
+        </div>
+        
+        <!-- Readability Feature -->
+        <button id="readabilityButton">Readability</button>
+        <div class="enhanced-transcript-container">
+            <!-- Changed from <div> to <textarea> and made it editable by removing 'readonly' -->
+            <textarea id="enhancedTranscript"></textarea>
+            <button id="copyEnhancedButton">Copy</button>
         </div>
     </div>
 
@@ -131,20 +161,24 @@
         const recordButton = document.getElementById('recordButton');
         const transcript = document.getElementById('transcript');
         const copyButton = document.getElementById('copyButton');
+        const readabilityButton = document.getElementById('readabilityButton');
+        const enhancedTranscript = document.getElementById('enhancedTranscript');
+        const copyEnhancedButton = document.getElementById('copyEnhancedButton');
         const targetSeconds = 5; // Set the duration for each audio chunk
         
         // Connect to WebSocket server
         function connect() {
-            ws = new WebSocket(`wss://${window.location.host}/ws`);
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
             
             ws.onmessage = function(event) {
                 const data = JSON.parse(event.data);
                 if (data.type === 'text') {
                     if (data.isNewResponse) {
-                        transcript.textContent = data.content;
+                        transcript.value = data.content; // Changed from textContent to value
                         stopTimer();  // Stop timer when response arrives
                     } else {
-                        transcript.textContent += data.content;
+                        transcript.value += data.content; // Changed from textContent to value
                     }
                 }
             };
@@ -177,7 +211,7 @@
             
             // Calculate target samples for 5 seconds
             // Assuming 24kHz sample rate as per server's AudioProcessor
-            const targetSamples = audioContext.sampleRate * targetSeconds;
+            const targetSamples = 24000 * targetSeconds;
             
             processor.onaudioprocess = (e) => {
                 if (!isRecording) return;
@@ -244,9 +278,10 @@
         recordButton.onclick = async function() {
             if (!isRecording) {
                 try {
-                    // Clear transcript when starting new recording
-                    transcript.textContent = '';
-                    
+                    // Clear transcripts when starting new recording
+                    transcript.value = ''; // Changed from textContent to value
+                    enhancedTranscript.value = ''; // Changed from textContent to value
+
                     // Reset WebSocket connection for new recording
                     if (ws.readyState === WebSocket.OPEN) {
                         ws.close();
@@ -296,12 +331,12 @@
                                 combinedBuffer.set(pcmData, audioBuffer.length);
                                 audioBuffer = combinedBuffer;
                                 
-                                console.log(`Accumulated samples: ${audioBuffer.length}/${targetSamples}`);
+                                console.log(`Accumulated samples: ${audioBuffer.length}/24000`);
                                 
                                 // Check if we've accumulated enough samples
-                                if (audioBuffer.length >= targetSamples) {
-                                    const sendBuffer = audioBuffer.slice(0, targetSamples);
-                                    audioBuffer = audioBuffer.slice(targetSamples);
+                                if (audioBuffer.length >= 24000) {
+                                    const sendBuffer = audioBuffer.slice(0, 24000);
+                                    audioBuffer = audioBuffer.slice(24000);
                                     
                                     if (ws.readyState === WebSocket.OPEN) {
                                         console.log(`Sending 5-second chunk (${sendBuffer.length} samples)`);
@@ -359,10 +394,10 @@
             }
         };
         
-        // Copy functionality
+        // Copy functionality for original transcript
         copyButton.onclick = async function() {
             try {
-                await navigator.clipboard.writeText(transcript.textContent);
+                await navigator.clipboard.writeText(transcript.value); // Changed from textContent to value
                 const originalText = copyButton.textContent;
                 copyButton.textContent = 'Copied!';
                 setTimeout(() => {
@@ -372,7 +407,7 @@
                 console.error('Failed to copy text:', err);
                 // Fallback for older browsers
                 const textArea = document.createElement('textarea');
-                textArea.value = transcript.textContent;
+                textArea.value = transcript.value; // Changed from textContent to value
                 document.body.appendChild(textArea);
                 textArea.select();
                 try {
@@ -386,6 +421,78 @@
                     console.error('Fallback copy failed:', err);
                 }
                 document.body.removeChild(textArea);
+            }
+        };
+
+        // Copy functionality for enhanced transcript
+        copyEnhancedButton.onclick = async function() {
+            try {
+                await navigator.clipboard.writeText(enhancedTranscript.value); // Changed from textContent to value
+                const originalText = copyEnhancedButton.textContent;
+                copyEnhancedButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyEnhancedButton.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = enhancedTranscript.value; // Changed from textContent to value
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalText = copyEnhancedButton.textContent;
+                    copyEnhancedButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyEnhancedButton.textContent = originalText;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        };
+
+        // Handle Readability Enhancement
+        readabilityButton.onclick = async function() {
+            const inputText = transcript.value.trim(); // Changed from textContent to value
+            if (!inputText) {
+                alert('Please enter text to enhance readability.');
+                return;
+            }
+
+            enhancedTranscript.value = '';  // Clear previous enhanced text
+
+            try {
+                const response = await fetch('/readability', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: inputText })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error enhancing readability:', errorData);
+                    alert('Error enhancing readability: ' + errorData.detail);
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    enhancedTranscript.value += chunk; // Changed from textContent to value
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while enhancing readability.');
             }
         };
     </script>
