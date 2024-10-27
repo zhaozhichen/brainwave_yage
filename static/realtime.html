@@ -109,11 +109,12 @@
         /* Flex Container */
         .button-container {
             display: flex;
-            flex-direction: row;
+            flex-direction: row; /* Ensure row direction */
             justify-content: center;
             align-items: center; /* Align items vertically centered */
             gap: 20px;
             padding: 20px;
+            flex-wrap: wrap; /* Allow wrapping if necessary */
         }
 
         /* Shared Action Button Styles */
@@ -140,16 +141,19 @@
             transform: translateY(-2px); /* Subtle lift effect on hover */
         }
 
-        /* Responsive Adjustments */
+        /* Modified Media Query for Mobile Devices */
         @media (max-width: 480px) {
             .button-container {
-                flex-direction: column;
-                gap: 10px;
+                flex-direction: row; /* Keep buttons side by side */
+                gap: 10px; /* Adjust gap as needed */
+                padding: 10px; /* Reduce padding for mobile */
             }
             
             .action-button {
-                width: 100%;
-                max-width: none;
+                flex: 1 1 45%; /* Allow buttons to take up roughly half the width each */
+                max-width: 45%; /* Prevent buttons from exceeding 45% of the container */
+                height: 45px; /* Slightly reduce height for mobile */
+                font-size: 0.9rem; /* Adjust font size if necessary */
             }
         }
     </style>

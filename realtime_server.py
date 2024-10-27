@@ -265,7 +265,10 @@ class AskAIResponse(BaseModel):
     description="Ask AI to provide insights using O1-mini model."
 )
 def ask_ai(request: AskAIRequest):
-    prompt = "You are a helpful AI assistant. Please provide a thoughtful and insightful answer to the following question or text:"
+    prompt = PROMPTS.get('ask-ai')
+    if not prompt:
+        raise HTTPException(status_code=500, detail="Ask AI prompt not found.")
+
     try:
         # Use o1-mini specifically for ask_ai
         answer = llm_processor.process_text_sync(request.text, prompt, model="o1-mini")

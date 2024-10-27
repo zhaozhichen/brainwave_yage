@@ -26,7 +26,7 @@ class GeminiProcessor(LLMProcessor):
         self.default_model = default_model
 
     async def process_text(self, text: str, prompt: str, model: Optional[str] = None) -> AsyncGenerator[str, None]:
-        all_prompt = f"{prompt}\n\nBelow is the text to be processed:\n\n{text}\n\n"
+        all_prompt = f"{prompt}\n\n{text}"
         model_name = model or self.default_model
         logger.info(f"Using model: {model_name} for processing")
         logger.info(f"Prompt: {all_prompt}")
@@ -40,7 +40,7 @@ class GeminiProcessor(LLMProcessor):
                 yield chunk.text
 
     def process_text_sync(self, text: str, prompt: str, model: Optional[str] = None) -> str:
-        all_prompt = f"{prompt}\n\nBelow is the text to be processed:\n\n{text}\n\n"
+        all_prompt = f"{prompt}\n\n{text}"
         model_name = model or self.default_model
         logger.info(f"Using model: {model_name} for sync processing")
         logger.info(f"Prompt: {all_prompt}")
@@ -58,7 +58,7 @@ class GPTProcessor(LLMProcessor):
         self.default_model = default_model
 
     async def process_text(self, text: str, prompt: str, model: Optional[str] = None) -> AsyncGenerator[str, None]:
-        all_prompt = f"{prompt}\n\nBelow is the text to be processed:\n\n{text}\n\n"
+        all_prompt = f"{prompt}\n\n{text}"
         model_name = model or self.default_model
         logger.info(f"Using model: {model_name} for processing")
         logger.info(f"Prompt: {all_prompt}")
@@ -74,7 +74,7 @@ class GPTProcessor(LLMProcessor):
                 yield chunk.choices[0].delta.content
 
     def process_text_sync(self, text: str, prompt: str, model: Optional[str] = None) -> str:
-        all_prompt = f"{prompt}\n\nBelow is the text to be processed:\n\n{text}\n\n"
+        all_prompt = f"{prompt}\n\n{text}"
         model_name = model or self.default_model
         logger.info(f"Using model: {model_name} for sync processing")
         logger.info(f"Prompt: {all_prompt}")
