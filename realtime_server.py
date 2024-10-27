@@ -64,6 +64,14 @@ class AudioProcessor:
         resampled_int16 = (resampled_data * 32768.0).clip(-32768, 32767).astype(np.int16)
         return resampled_int16.tobytes()
 
+    def save_audio_buffer(self, audio_buffer, filename):
+        with wave.open(filename, 'wb') as wf:
+            wf.setnchannels(1)  # Mono audio
+            wf.setsampwidth(2)  # 2 bytes per sample (16-bit)
+            wf.setframerate(self.target_sample_rate)
+            wf.writeframes(b''.join(audio_buffer))
+        logger.info(f"Saved audio buffer to {filename}")
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     logger.info("New WebSocket connection attempt")
@@ -162,6 +170,13 @@ async def websocket_endpoint(websocket: WebSocket):
                             
                         elif msg_type == "stop_recording":
                             logger.info("Stopping recording and generating response")
+                            
+                            # Save the audio buffer to a file
+                            # if audio_buffer:
+                            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                            #     filename = f"debug_audio_{timestamp}.wav"
+                            #     audio_processor.save_audio_buffer(audio_buffer, filename)
+                            
                             await client.commit_audio()
                             await client.start_response(PROMPTS['paraphrase-gpt-realtime'])
                             
@@ -171,10 +186,9 @@ async def websocket_endpoint(websocket: WebSocket):
                             # Wait until all audio chunks are processed
                             await recording_stopped.wait()
                             
-                            # Clear the audio buffer without saving
-                            if audio_buffer:
-                                audio_buffer.clear()  # Clear the buffer
-                            
+                            # Clear the audio buffer after saving
+                            audio_buffer.clear()
+
                 except websockets.exceptions.ConnectionClosed:
                     logger.info("WebSocket connection closed by client")
                     await audio_queue.put(None)  # Signal send_audio_messages to exit
