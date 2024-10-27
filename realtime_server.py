@@ -32,7 +32,8 @@ if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY is not set in environment variables.")
     raise EnvironmentError("OPENAI_API_KEY is not set.")
 
-llm_processor = get_llm_processor("gpt") 
+# Initialize with a default model
+llm_processor = get_llm_processor("gpt-4o")  # Default processor
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -232,7 +233,7 @@ class ReadabilityResponse(BaseModel):
     "/readability",
     response_model=ReadabilityResponse,
     summary="Enhance Text Readability",
-    description="Improve the readability of the provided text using the configured LLM."
+    description="Improve the readability of the provided text using GPT-4."
 )
 async def enhance_readability(request: ReadabilityRequest):
     prompt = PROMPTS.get('readability-enhance')
@@ -241,7 +242,8 @@ async def enhance_readability(request: ReadabilityRequest):
 
     try:
         async def text_generator():
-            async for part in llm_processor.process_text(request.text, prompt):
+            # Use gpt-4o specifically for readability
+            async for part in llm_processor.process_text(request.text, prompt, model="gpt-4o"):
                 yield part
 
         return StreamingResponse(text_generator(), media_type="text/plain")
@@ -249,6 +251,28 @@ async def enhance_readability(request: ReadabilityRequest):
     except Exception as e:
         logger.error(f"Error enhancing readability: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error processing readability enhancement.")
+
+class AskAIRequest(BaseModel):
+    text: str = Field(..., description="The question to ask AI.")
+
+class AskAIResponse(BaseModel):
+    answer: str = Field(..., description="AI's answer to the question.")
+
+@app.post(
+    "/ask_ai",
+    response_model=AskAIResponse,
+    summary="Ask AI a Question",
+    description="Ask AI to provide insights using O1-mini model."
+)
+def ask_ai(request: AskAIRequest):
+    prompt = "You are a helpful AI assistant. Please provide a thoughtful and insightful answer to the following question or text:"
+    try:
+        # Use o1-mini specifically for ask_ai
+        answer = llm_processor.process_text_sync(request.text, prompt, model="o1-mini")
+        return AskAIResponse(answer=answer)
+    except Exception as e:
+        logger.error(f"Error processing AI question: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing AI question.")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=3005)

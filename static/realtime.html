@@ -106,24 +106,51 @@
             }
         }
 
-        /* Styles for the Readability button */
-        #readabilityButton {
-            width: 150px;
-            height: 40px;
+        /* Flex Container */
+        .button-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center; /* Align items vertically centered */
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Shared Action Button Styles */
+        .action-button {
+            flex: 1 1 150px;
+            max-width: 200px;
+            height: 50px; /* Consistent height */
             border-radius: 8px;
-            background-color: #34C759;
+            background-color: #007AFF; /* Consistent background color */
             border: none;
             cursor: pointer;
-            margin: 20px auto;
-            display: block;
-            transition: background-color 0.3s ease;
             color: white;
             font-size: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: flex; /* Use Flexbox for button content */
+            align-items: center; /* Center text vertically */
+            justify-content: center; /* Center text horizontally */
+            box-sizing: border-box; /* Ensure padding and borders are included in the total width and height */
         }
 
-        #readabilityButton:hover {
-            background-color: #28a745;
+        .action-button:hover {
+            background-color: #005bb5; /* Darker shade on hover */
+            transform: translateY(-2px); /* Subtle lift effect on hover */
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 480px) {
+            .button-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-button {
+                width: 100%;
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -140,9 +167,12 @@
         </div>
         
         <!-- Readability Feature -->
-        <button id="readabilityButton">Readability</button>
+        <div class="button-container">
+            <button id="readabilityButton" class="action-button">Readability</button>
+            <button id="askAIButton" class="action-button">Ask AI</button>
+        </div>
+
         <div class="enhanced-transcript-container">
-            <!-- Changed from <div> to <textarea> and made it editable by removing 'readonly' -->
             <textarea id="enhancedTranscript"></textarea>
             <button id="copyEnhancedButton">Copy</button>
         </div>
@@ -164,8 +194,17 @@
         const readabilityButton = document.getElementById('readabilityButton');
         const enhancedTranscript = document.getElementById('enhancedTranscript');
         const copyEnhancedButton = document.getElementById('copyEnhancedButton');
+        const askAIButton = document.getElementById('askAIButton'); // Added reference to Ask AI button
         const targetSeconds = 5; // Set the duration for each audio chunk
         
+        // Add this at the beginning of the script section
+        // Check for 'start' parameter and auto-start recording if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoStart = urlParams.get('start') === '1';
+        
+        // Add this flag at the beginning of the script
+        let isAutoStarted = false;
+
         // Connect to WebSocket server
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -175,16 +214,25 @@
                 const data = JSON.parse(event.data);
                 if (data.type === 'text') {
                     if (data.isNewResponse) {
-                        transcript.value = data.content; // Changed from textContent to value
-                        stopTimer();  // Stop timer when response arrives
+                        transcript.value = data.content;
+                        stopTimer();  // Only stop the timer, don't reset
                     } else {
-                        transcript.value += data.content; // Changed from textContent to value
+                        transcript.value += data.content;
                     }
+                    transcript.scrollTop = transcript.scrollHeight;
                 }
             };
             
             ws.onclose = function() {
                 setTimeout(connect, 1000);
+            };
+
+            // Modify the WebSocket onopen handler
+            ws.onopen = function() {
+                if (autoStart && !isRecording && !isAutoStarted) {
+                    isAutoStarted = true;
+                    recordButton.click();
+                }
             };
         }
         
@@ -255,6 +303,7 @@
         
         // Timer functions
         function startTimer() {
+            resetTimer(); // Reset timer before starting
             startTime = Date.now();
             timerInterval = setInterval(() => {
                 const elapsedTime = Date.now() - startTime;
@@ -279,19 +328,22 @@
             if (!isRecording) {
                 try {
                     // Clear transcripts when starting new recording
-                    transcript.value = ''; // Changed from textContent to value
-                    enhancedTranscript.value = ''; // Changed from textContent to value
+                    transcript.value = '';
+                    enhancedTranscript.value = '';
 
-                    // Reset WebSocket connection for new recording
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.close();
+                    // Only reset WebSocket if this isn't an auto-start
+                    if (!isAutoStarted) {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.close();
+                        }
+                        connect();
+                        
+                        // Wait for WebSocket to connect
+                        while (ws.readyState !== WebSocket.OPEN) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
                     }
-                    connect();
-                    
-                    // Wait for WebSocket to connect
-                    while (ws.readyState !== WebSocket.OPEN) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    }
+                    isAutoStarted = false;  // Reset the flag after handling
 
                     // Start recording
                     console.log('Requesting microphone access...');
@@ -367,8 +419,7 @@
                 console.log('Stopping recording...');
                 isRecording = false;
                 
-                stopTimer();
-                resetTimer();
+                startTimer();  // Start timing the response
                 
                 // Send any remaining audio samples in the buffer
                 if (audioBuffer && audioBuffer.length > 0) {
@@ -456,9 +507,14 @@
 
         // Handle Readability Enhancement
         readabilityButton.onclick = async function() {
+            // Reset and start the timer
+            resetTimer();
+            startTimer();
+
             const inputText = transcript.value.trim(); // Changed from textContent to value
             if (!inputText) {
                 alert('Please enter text to enhance readability.');
+                stopTimer(); // Stop the timer if there's no input
                 return;
             }
 
@@ -477,6 +533,7 @@
                     const errorData = await response.json();
                     console.error('Error enhancing readability:', errorData);
                     alert('Error enhancing readability: ' + errorData.detail);
+                    stopTimer(); // Stop the timer on error
                     return;
                 }
 
@@ -487,12 +544,63 @@
                     const { done, value } = await reader.read();
                     if (done) break;
                     const chunk = decoder.decode(value, { stream: true });
-                    enhancedTranscript.value += chunk; // Changed from textContent to value
+                    enhancedTranscript.value += chunk;
+                    // Auto-scroll the enhanced transcript textarea
+                    enhancedTranscript.scrollTop = enhancedTranscript.scrollHeight;
                 }
+
+                // Stop the timer after the response is fully received
+                stopTimer();
 
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred while enhancing readability.');
+                stopTimer(); // Stop the timer on error
+            }
+        };
+
+        // Handle Ask AI
+        askAIButton.onclick = async function() {
+            // Reset and start the timer
+            resetTimer();
+            startTimer();
+
+            const inputText = transcript.value.trim();
+            if (!inputText) {
+                alert('Please enter text to ask AI about.');
+                stopTimer(); // Stop the timer if there's no input
+                return;
+            }
+
+            enhancedTranscript.value = '';  // Clear previous response
+
+            try {
+                const response = await fetch('/ask_ai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: inputText })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error asking AI:', errorData);
+                    alert('Error asking AI: ' + errorData.detail);
+                    stopTimer(); // Stop the timer on error
+                    return;
+                }
+
+                const result = await response.json();
+                enhancedTranscript.value = result.answer;
+
+                // Stop the timer after the response is received
+                stopTimer();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while asking AI.');
+                stopTimer(); // Stop the timer on error
             }
         };
     </script>
