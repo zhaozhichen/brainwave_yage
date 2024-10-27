@@ -2,60 +2,53 @@
 <html>
 <head>
     <title>Brainwave</title>
-    <!-- Add viewport meta tag -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             background: #f5f5f7;
             color: #1d1d1f;
             line-height: 1.5;
         }
         .container {
             max-width: 800px;
-            margin: 20px auto;  /* reduced margin for mobile */
-            padding: 20px;      /* reduced padding for mobile */
+            margin: 20px auto;
+            padding: 20px;
             background: white;
             border-radius: 16px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 90%;        /* ensure container doesn't overflow on mobile */
+            width: 90%;
         }
         h1 {
-            font-size: 2rem;   /* slightly smaller on mobile */
+            font-size: 2rem;
             font-weight: 600;
             margin-bottom: 30px;
             text-align: center;
-            color: #1d1d1f;
         }
         #recordButton {
-            width: 100px;      /* slightly larger touch target */
-            height: 100px;     /* slightly larger touch target */
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background-color: #007AFF;
             border: none;
             cursor: pointer;
             margin: 20px auto;
             display: block;
-            transition: all 0.3s ease;
             color: white;
             font-size: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
-        #recordButton:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
+        #recordButton:hover { transform: scale(1.05); }
         #recordButton.recording {
             background-color: #FF3B30;
             animation: pulse 2s infinite;
         }
         
-        /* Updated styles for textarea elements and containers */
         .transcript-container, .enhanced-transcript-container {
             position: relative;
             margin-top: 30px;
         }
-
         textarea {
             width: 100%;
             min-height: 150px;
@@ -68,8 +61,7 @@
             resize: vertical;
             box-sizing: border-box;
         }
-
-        #copyButton, #copyEnhancedButton {
+        .copy-button {
             position: absolute;
             top: 15px;
             right: 15px;
@@ -82,78 +74,52 @@
             font-size: 0.9rem;
             z-index: 1;
         }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        /* Add media queries for different screen sizes */
-        @media (max-width: 480px) {
-            .container {
-                margin: 10px auto;
-                padding: 15px;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-                margin-bottom: 20px;
-            }
-
-            textarea {
-                padding: 12px;
-            }
-        }
-
-        /* Flex Container */
         .button-container {
             display: flex;
-            flex-direction: row; /* Ensure row direction */
             justify-content: center;
-            align-items: center; /* Align items vertically centered */
+            align-items: center;
             gap: 20px;
             padding: 20px;
-            flex-wrap: wrap; /* Allow wrapping if necessary */
+            flex-wrap: wrap;
         }
-
-        /* Shared Action Button Styles */
         .action-button {
             flex: 1 1 150px;
             max-width: 200px;
-            height: 50px; /* Consistent height */
+            height: 50px;
             border-radius: 8px;
-            background-color: #007AFF; /* Consistent background color */
+            background-color: #007AFF;
             border: none;
             cursor: pointer;
             color: white;
             font-size: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            display: flex; /* Use Flexbox for button content */
-            align-items: center; /* Center text vertically */
-            justify-content: center; /* Center text horizontally */
-            box-sizing: border-box; /* Ensure padding and borders are included in the total width and height */
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
         .action-button:hover {
-            background-color: #005bb5; /* Darker shade on hover */
-            transform: translateY(-2px); /* Subtle lift effect on hover */
+            background-color: #005bb5;
+            transform: translateY(-2px);
         }
-
-        /* Modified Media Query for Mobile Devices */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
         @media (max-width: 480px) {
+            .container { margin: 10px auto; padding: 15px; }
+            h1 { font-size: 1.75rem; margin-bottom: 20px; }
+            textarea { padding: 12px; }
             .button-container {
-                flex-direction: row; /* Keep buttons side by side */
-                gap: 10px; /* Adjust gap as needed */
-                padding: 10px; /* Reduce padding for mobile */
+                gap: 10px;
+                padding: 10px;
             }
-            
             .action-button {
-                flex: 1 1 45%; /* Allow buttons to take up roughly half the width each */
-                max-width: 45%; /* Prevent buttons from exceeding 45% of the container */
-                height: 45px; /* Slightly reduce height for mobile */
-                font-size: 0.9rem; /* Adjust font size if necessary */
+                flex: 1 1 45%;
+                max-width: 45%;
+                height: 45px;
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -161,166 +127,84 @@
 <body>
     <div class="container">
         <h1>Brainwave</h1>
-        <!-- Add this after the h1 element -->
         <div id="timer" style="text-align: center; margin-bottom: 15px; font-size: 1.2rem;">00:00</div>
         <button id="recordButton">Start</button>
         <div class="transcript-container">
-            <!-- Changed from <div> to <textarea> and made it editable by removing 'readonly' -->
             <textarea id="transcript"></textarea>
-            <button id="copyButton">Copy</button>
+            <button id="copyButton" class="copy-button">Copy</button>
         </div>
-        
-        <!-- Readability Feature -->
         <div class="button-container">
             <button id="readabilityButton" class="action-button">Readability</button>
             <button id="askAIButton" class="action-button">Ask AI</button>
         </div>
-
         <div class="enhanced-transcript-container">
             <textarea id="enhancedTranscript"></textarea>
-            <button id="copyEnhancedButton">Copy</button>
+            <button id="copyEnhancedButton" class="copy-button">Copy</button>
         </div>
     </div>
-
     <script>
-        let ws;
-        let audioContext;
-        let processor;
-        let source;
+        // Global state
+        let ws, audioContext, processor, source, stream;
         let isRecording = false;
         let timerInterval;
         let startTime;
-        let audioBuffer = new Int16Array(0); // Initialize global audioBuffer
+        let audioBuffer = new Int16Array(0);
+        let wsConnected = false;
+        let streamInitialized = false;
+        let isAutoStarted = false;
         
+        // DOM elements
         const recordButton = document.getElementById('recordButton');
         const transcript = document.getElementById('transcript');
-        const copyButton = document.getElementById('copyButton');
-        const readabilityButton = document.getElementById('readabilityButton');
         const enhancedTranscript = document.getElementById('enhancedTranscript');
+        const copyButton = document.getElementById('copyButton');
         const copyEnhancedButton = document.getElementById('copyEnhancedButton');
-        const askAIButton = document.getElementById('askAIButton'); // Added reference to Ask AI button
-        const targetSeconds = 5; // Set the duration for each audio chunk
+        const readabilityButton = document.getElementById('readabilityButton');
+        const askAIButton = document.getElementById('askAIButton');
         
-        // Add this at the beginning of the script section
-        // Check for 'start' parameter and auto-start recording if present
+        // Configuration
+        const targetSeconds = 5;
         const urlParams = new URLSearchParams(window.location.search);
         const autoStart = urlParams.get('start') === '1';
-        
-        // Add this flag at the beginning of the script
-        let isAutoStarted = false;
 
-        // Connect to WebSocket server
-        function connect() {
-            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
-            
-            ws.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                if (data.type === 'text') {
-                    if (data.isNewResponse) {
-                        transcript.value = data.content;
-                        stopTimer();  // Only stop the timer, don't reset
-                        // Only attempt automatic copy on desktop
-                        if (!isMobileDevice()) {
-                            copyToClipboard(data.content, copyButton);
-                        }
-                    } else {
-                        transcript.value += data.content;
-                        // Only attempt automatic copy on desktop
-                        if (!isMobileDevice()) {
-                            copyToClipboard(transcript.value, copyButton);
-                        }
-                    }
-                    transcript.scrollTop = transcript.scrollHeight;
-                }
-            };
-            
-            ws.onclose = function() {
-                setTimeout(connect, 1000);
-            };
+        // Utility functions
+        const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            // Modify the WebSocket onopen handler
-            ws.onopen = function() {
-                if (autoStart && !isRecording && !isAutoStarted) {
-                    isAutoStarted = true;
-                    recordButton.click();
-                }
-            };
-        }
-        
-        connect();
-        
-        // Add utility function
-        function chunkArray(array, chunkSize) {
-            const chunks = [];
-            for (let i = 0; i < array.length; i += chunkSize) {
-                chunks.push(array.slice(i, i + chunkSize));
+        async function copyToClipboard(text, button) {
+            if (!text) return;
+
+            if (isMobileDevice()) {
+                const textArea = document.getElementById('transcript');
+                textArea.focus();
+                textArea.setSelectionRange(0, textArea.value.length);
+                showCopiedFeedback(button, 'Text Selected!');
+                return;
             }
-            return chunks;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                showCopiedFeedback(button, 'Copied!');
+            } catch (err) {
+                console.error('Clipboard copy failed:', err);
+            }
         }
 
-        // Initialize audio context
-        async function initAudio(stream) {
-            audioContext = new AudioContext();
-            console.log('Audio context sample rate:', audioContext.sampleRate);
-            
-            source = audioContext.createMediaStreamSource(stream);
-            
-            // Create processor with buffer size 4096
-            processor = audioContext.createScriptProcessor(4096, 1, 1);
-            
-            // Calculate target samples for 5 seconds
-            // Assuming 24kHz sample rate as per server's AudioProcessor
-            const targetSamples = 24000 * targetSeconds;
-            
-            processor.onaudioprocess = (e) => {
-                if (!isRecording) return;
-                
-                // Get audio data from input channel
-                const inputData = e.inputBuffer.getChannelData(0);
-                console.log(`Processing audio buffer of ${inputData.length} samples`);
-                
-                // Convert Float32Array to Int16Array (PCM16)
-                const pcmData = new Int16Array(inputData.length);
-                for (let i = 0; i < inputData.length; i++) {
-                    pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
-                }
-                
-                // Concatenate the new pcmData to audioBuffer
-                const combinedBuffer = new Int16Array(audioBuffer.length + pcmData.length);
-                combinedBuffer.set(audioBuffer);
-                combinedBuffer.set(pcmData, audioBuffer.length);
-                audioBuffer = combinedBuffer;
-                
-                console.log(`Accumulated samples: ${audioBuffer.length}/${targetSamples}`);
-                
-                // Check if we've accumulated enough samples
-                if (audioBuffer.length >= targetSamples) {
-                    const sendBuffer = audioBuffer.slice(0, targetSamples);
-                    audioBuffer = audioBuffer.slice(targetSamples);
-                    
-                    if (ws.readyState === WebSocket.OPEN) {
-                        console.log(`Sending 5-second chunk (${sendBuffer.length} samples)`);
-                        ws.send(sendBuffer.buffer);
-                    } else {
-                        console.error(`WebSocket not open. ReadyState: ${ws.readyState}`);
-                    }
-                }
-            };
-            
-            // Connect nodes
-            source.connect(processor);
-            processor.connect(audioContext.destination);
+        function showCopiedFeedback(button, message) {
+            if (!button) return;
+            const originalText = button.textContent;
+            button.textContent = message;
+            setTimeout(() => button.textContent = originalText, 2000);
         }
-        
+
         // Timer functions
         function startTimer() {
-            resetTimer(); // Reset timer before starting
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = '00:00';
             startTime = Date.now();
             timerInterval = setInterval(() => {
-                const elapsedTime = Date.now() - startTime;
-                const minutes = Math.floor(elapsedTime / 60000);
-                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                const elapsed = Date.now() - startTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
                 document.getElementById('timer').textContent = 
                     `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }, 1000);
@@ -330,324 +214,221 @@
             clearInterval(timerInterval);
         }
 
-        function resetTimer() {
-            stopTimer();
-            document.getElementById('timer').textContent = '00:00';
+        // Audio processing
+        function createAudioProcessor() {
+            processor = audioContext.createScriptProcessor(4096, 1, 1);
+            processor.onaudioprocess = (e) => {
+                if (!isRecording) return;
+                
+                const inputData = e.inputBuffer.getChannelData(0);
+                const pcmData = new Int16Array(inputData.length);
+                
+                for (let i = 0; i < inputData.length; i++) {
+                    pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
+                }
+                
+                const combinedBuffer = new Int16Array(audioBuffer.length + pcmData.length);
+                combinedBuffer.set(audioBuffer);
+                combinedBuffer.set(pcmData, audioBuffer.length);
+                audioBuffer = combinedBuffer;
+                
+                if (audioBuffer.length >= 24000) {
+                    const sendBuffer = audioBuffer.slice(0, 24000);
+                    audioBuffer = audioBuffer.slice(24000);
+                    
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(sendBuffer.buffer);
+                    }
+                }
+            };
+            return processor;
         }
 
-        // Handle recording
-        recordButton.onclick = async function() {
-            if (!isRecording) {
-                try {
-                    // Clear transcripts when starting new recording
-                    transcript.value = '';
-                    enhancedTranscript.value = '';
+        async function initAudio(stream) {
+            audioContext = new AudioContext();
+            source = audioContext.createMediaStreamSource(stream);
+            processor = createAudioProcessor();
+            source.connect(processor);
+            processor.connect(audioContext.destination);
+        }
 
-                    // Only reset WebSocket if this isn't an auto-start
-                    if (!isAutoStarted) {
-                        if (ws.readyState === WebSocket.OPEN) {
-                            ws.close();
-                        }
-                        connect();
-                        
-                        // Wait for WebSocket to connect
-                        while (ws.readyState !== WebSocket.OPEN) {
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        }
+        // WebSocket handling
+        function initializeWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
+            
+            ws.onopen = () => {
+                wsConnected = true;
+                if (autoStart && !isRecording && !isAutoStarted) startRecording();
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'text') {
+                    if (data.isNewResponse) {
+                        transcript.value = data.content;
+                        stopTimer();
+                    } else {
+                        transcript.value += data.content;
                     }
-                    isAutoStarted = false;  // Reset the flag after handling
+                    if (!isMobileDevice()) copyToClipboard(transcript.value, copyButton);
+                    transcript.scrollTop = transcript.scrollHeight;
+                }
+            };
+            
+            ws.onclose = () => {
+                wsConnected = false;
+                setTimeout(initializeWebSocket, 1000);
+            };
+        }
 
-                    // Start recording
-                    console.log('Requesting microphone access...');
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
+        // Recording control
+        async function startRecording() {
+            if (isRecording) return;
+            
+            try {
+                transcript.value = '';
+                enhancedTranscript.value = '';
+
+                if (!streamInitialized) {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
                         audio: {
-                            channelCount: 1,  // mono
+                            channelCount: 1,
                             echoCancellation: true,
                             noiseSuppression: true,
                             autoGainControl: true
                         } 
                     });
-                    console.log('Microphone access granted');
-                    
-                    if (!audioContext) {
-                        await initAudio(stream);
-                    } else {
-                        // Reconnect the source and processor if they are disconnected
-                        if (!processor) {
-                            processor = audioContext.createScriptProcessor(4096, 1, 1);
-                            // Copy the entire onaudioprocess function from initAudio
-                            processor.onaudioprocess = (e) => {
-                                if (!isRecording) return;
-                                
-                                // Get audio data from input channel
-                                const inputData = e.inputBuffer.getChannelData(0);
-                                console.log(`Processing audio buffer of ${inputData.length} samples`);
-                                
-                                // Convert Float32Array to Int16Array (PCM16)
-                                const pcmData = new Int16Array(inputData.length);
-                                for (let i = 0; i < inputData.length; i++) {
-                                    pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32767)));
-                                }
-                                
-                                // Concatenate the new pcmData to audioBuffer
-                                const combinedBuffer = new Int16Array(audioBuffer.length + pcmData.length);
-                                combinedBuffer.set(audioBuffer);
-                                combinedBuffer.set(pcmData, audioBuffer.length);
-                                audioBuffer = combinedBuffer;
-                                
-                                console.log(`Accumulated samples: ${audioBuffer.length}/24000`);
-                                
-                                // Check if we've accumulated enough samples
-                                if (audioBuffer.length >= 24000) {
-                                    const sendBuffer = audioBuffer.slice(0, 24000);
-                                    audioBuffer = audioBuffer.slice(24000);
-                                    
-                                    if (ws.readyState === WebSocket.OPEN) {
-                                        console.log(`Sending 5-second chunk (${sendBuffer.length} samples)`);
-                                        ws.send(sendBuffer.buffer);
-                                    } else {
-                                        console.error(`WebSocket not open. ReadyState: ${ws.readyState}`);
-                                    }
-                                }
-                            };
-                            source = audioContext.createMediaStreamSource(stream);
-                            source.connect(processor);
-                            processor.connect(audioContext.destination);
-                        }
-                    }
-                    
-                    isRecording = true;
-                    await ws.send(JSON.stringify({ type: 'start_recording' }));
-                    
-                    startTimer();  // Start the timer when recording begins
-                    recordButton.textContent = 'Stop';
-                    recordButton.classList.add('recording');
-                    
-                } catch (error) {
-                    console.error('Error accessing microphone:', error);
-                    alert('Error accessing microphone: ' + error.message);
+                    streamInitialized = true;
                 }
-            } else {
-                console.log('Stopping recording...');
-                isRecording = false;
+
+                if (!stream) throw new Error('Failed to initialize audio stream');
+                if (!audioContext) await initAudio(stream);
+
+                isRecording = true;
+                await ws.send(JSON.stringify({ type: 'start_recording' }));
                 
-                startTimer();  // Start timing the response
+                startTimer();
+                recordButton.textContent = 'Stop';
+                recordButton.classList.add('recording');
                 
-                // Send any remaining audio samples in the buffer
-                if (audioBuffer && audioBuffer.length > 0) {
-                    if (ws.readyState === WebSocket.OPEN) {
-                        console.log(`Sending final chunk (${audioBuffer.length} samples)`);
-                        ws.send(audioBuffer.buffer);
-                        // Clear the buffer after sending
-                        audioBuffer = new Int16Array(0);
-                    } else {
-                        console.error(`WebSocket not open. ReadyState: ${ws.readyState}`);
-                    }
-                }
-                
-                // Introduce a slight delay to ensure all audio chunks are sent
-                await new Promise(resolve => setTimeout(resolve, 500));  // 500ms delay
-                
-                console.log('Sending stop_recording signal to server...');
-                await ws.send(JSON.stringify({ type: 'stop_recording' }));
-                console.log('Stop recording signal sent');
-                
-                recordButton.textContent = 'Start';
-                recordButton.classList.remove('recording');
-            }
-        };
-        
-        // Add a function to detect mobile devices
-        function isMobileDevice() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
-
-        // Improved copyToClipboard function with mobile handling
-        async function copyToClipboard(text, button) {
-            if (!text) return;
-
-            if (isMobileDevice()) {
-                // On mobile, we'll just select the text to make it easier to copy
-                const textArea = document.getElementById('transcript');
-                textArea.focus();
-                textArea.setSelectionRange(0, textArea.value.length);
-                showCopiedFeedback(button);
-                return;
-            }
-
-            // Desktop clipboard handling remains the same
-            if (navigator.clipboard && window.isSecureContext) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    showCopiedFeedback(button);
-                    return;
-                } catch (err) {
-                    console.log('Modern clipboard API failed:', err);
-                }
-            }
-
-            // Fallback method for desktop
-            try {
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textArea);
-
-                if (successful) {
-                    showCopiedFeedback(button);
-                }
-            } catch (err) {
-                console.error('Clipboard copy failed:', err);
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                alert('Error accessing microphone: ' + error.message);
             }
         }
 
-        // Update the feedback message based on device type
-        function showCopiedFeedback(button) {
-            if (!button) return;
+        async function stopRecording() {
+            if (!isRecording) return;
             
-            const originalText = button.textContent;
-            if (isMobileDevice()) {
-                button.textContent = 'Text Selected!';
-            } else {
-                button.textContent = 'Copied!';
+            isRecording = false;
+            startTimer();
+            
+            if (audioBuffer.length > 0 && ws.readyState === WebSocket.OPEN) {
+                ws.send(audioBuffer.buffer);
+                audioBuffer = new Int16Array(0);
             }
-            setTimeout(() => {
-                button.textContent = originalText;
-            }, 2000);
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await ws.send(JSON.stringify({ type: 'stop_recording' }));
+            
+            recordButton.textContent = 'Start';
+            recordButton.classList.remove('recording');
         }
 
-        // Keep the manual copy button handlers
-        copyButton.onclick = function() {
-            copyToClipboard(transcript.value, copyButton);
-        };
+        // Event listeners
+        recordButton.onclick = () => isRecording ? stopRecording() : startRecording();
+        
+        copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
+        copyEnhancedButton.onclick = () => copyToClipboard(enhancedTranscript.value, copyEnhancedButton);
 
-        copyEnhancedButton.onclick = function() {
-            copyToClipboard(enhancedTranscript.value, copyEnhancedButton);
-        };
+        // Handle spacebar toggle
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                const activeElement = document.activeElement;
+                if (!activeElement.tagName.match(/INPUT|TEXTAREA/) && !activeElement.isContentEditable) {
+                    event.preventDefault();
+                    recordButton.click();
+                }
+            }
+        });
 
-        // Handle Readability Enhancement
-        readabilityButton.onclick = async function() {
-            // Reset and start the timer
-            resetTimer();
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeWebSocket();
+            if (autoStart) initializeAudioStream();
+        });
+
+        // Readability and AI handlers
+        readabilityButton.onclick = async () => {
             startTimer();
-
-            const inputText = transcript.value.trim(); // Changed from textContent to value
+            const inputText = transcript.value.trim();
             if (!inputText) {
                 alert('Please enter text to enhance readability.');
-                stopTimer(); // Stop the timer if there's no input
+                stopTimer();
                 return;
             }
-
-            enhancedTranscript.value = '';  // Clear previous enhanced text
 
             try {
                 const response = await fetch('/readability', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: inputText })
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Error enhancing readability:', errorData);
-                    alert('Error enhancing readability: ' + errorData.detail);
-                    stopTimer(); // Stop the timer on error
-                    return;
-                }
+                if (!response.ok) throw new Error('Readability enhancement failed');
 
                 const reader = response.body.getReader();
-                const decoder = new TextDecoder('utf-8');
+                const decoder = new TextDecoder();
                 let fullText = '';
 
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-                    const chunk = decoder.decode(value, { stream: true });
-                    fullText += chunk;
+                    fullText += decoder.decode(value, { stream: true });
                     enhancedTranscript.value = fullText;
                     enhancedTranscript.scrollTop = enhancedTranscript.scrollHeight;
                 }
 
-                // Automatically copy the final result
-                await copyToClipboard(fullText, copyEnhancedButton);
+                if (!isMobileDevice()) copyToClipboard(fullText, copyEnhancedButton);
                 stopTimer();
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while enhancing readability.');
-                stopTimer(); // Stop the timer on error
+                alert('Error enhancing readability');
+                stopTimer();
             }
         };
 
-        // Handle Ask AI
-        askAIButton.onclick = async function() {
-            // Reset and start the timer
-            resetTimer();
+        askAIButton.onclick = async () => {
             startTimer();
-
             const inputText = transcript.value.trim();
             if (!inputText) {
                 alert('Please enter text to ask AI about.');
-                stopTimer(); // Stop the timer if there's no input
+                stopTimer();
                 return;
             }
-
-            enhancedTranscript.value = '';  // Clear previous response
 
             try {
                 const response = await fetch('/ask_ai', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: inputText })
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Error asking AI:', errorData);
-                    alert('Error asking AI: ' + errorData.detail);
-                    stopTimer(); // Stop the timer on error
-                    return;
-                }
+                if (!response.ok) throw new Error('AI request failed');
 
                 const result = await response.json();
                 enhancedTranscript.value = result.answer;
-                
-                // Automatically copy the result
-                await copyToClipboard(result.answer, copyEnhancedButton);
+                if (!isMobileDevice()) copyToClipboard(result.answer, copyEnhancedButton);
                 stopTimer();
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred while asking AI.');
-                stopTimer(); // Stop the timer on error
+                alert('Error asking AI');
+                stopTimer();
             }
         };
-
-        /* === New Feature: Toggle Recording with Spacebar === */
-        document.addEventListener('keydown', function(event) {
-            // Check if the pressed key is the spacebar
-            if (event.code === 'Space') {
-                // Check if the active element is not an input or textarea to avoid interfering with typing
-                const activeElement = document.activeElement;
-                const isEditable = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable;
-
-                if (!isEditable) {
-                    event.preventDefault(); // Prevent default spacebar behavior (like scrolling)
-                    recordButton.click();   // Trigger the record button click
-                }
-            }
-        });
-        /* === End of New Feature === */
     </script>
 </body>
 </html>
