@@ -51,7 +51,7 @@ Deploying **Brainwave** involves setting up a Python-based environment, installi
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/brainwave.git
+   git clone https://github.com/grapeot/brainwave.git
    cd brainwave
    ```
 
