@@ -77,165 +77,195 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("New WebSocket connection attempt")
     await websocket.accept()
     logger.info("WebSocket connection accepted")
-    client = OpenAIRealtimeAudioTextClient(os.getenv("OPENAI_API_KEY"))
-    audio_processor = AudioProcessor()
-    audio_buffer = []  # Initialize audio buffer
-    recording_stopped = asyncio.Event()  # Event to signal recording stop
     
-    try:
-        await client.connect()
-        logger.info("Successfully connected to OpenAI client")
-        
-        # Define handlers for OpenAI messages
-        async def handle_text_delta(data):
+    # Add initial status update here
+    await websocket.send_text(json.dumps({
+        "type": "status",
+        "status": "idle"  # Set initial status to idle (blue)
+    }))
+    
+    client = None
+    audio_processor = AudioProcessor()
+    audio_buffer = []
+    recording_stopped = asyncio.Event()
+    openai_ready = asyncio.Event()
+    pending_audio_chunks = []
+    
+    async def initialize_openai():
+        nonlocal client
+        client = OpenAIRealtimeAudioTextClient(os.getenv("OPENAI_API_KEY"))
+        try:
+            await client.connect()
+            logger.info("Successfully connected to OpenAI client")
+            
+            # Register handlers after client is initialized
+            client.register_handler("session.updated", lambda data: handle_generic_event("session.updated", data))
+            client.register_handler("input_audio_buffer.cleared", lambda data: handle_generic_event("input_audio_buffer.cleared", data))
+            client.register_handler("input_audio_buffer.speech_started", lambda data: handle_generic_event("input_audio_buffer.speech_started", data))
+            client.register_handler("rate_limits.updated", lambda data: handle_generic_event("rate_limits.updated", data))
+            client.register_handler("response.output_item.added", lambda data: handle_generic_event("response.output_item.added", data))
+            client.register_handler("conversation.item.created", lambda data: handle_generic_event("conversation.item.created", data))
+            client.register_handler("response.content_part.added", lambda data: handle_generic_event("response.content_part.added", data))
+            client.register_handler("response.text.done", lambda data: handle_generic_event("response.text.done", data))
+            client.register_handler("response.content_part.done", lambda data: handle_generic_event("response.content_part.done", data))
+            client.register_handler("response.output_item.done", lambda data: handle_generic_event("response.output_item.done", data))
+            client.register_handler("response.done", lambda data: handle_response_done(data))
+            client.register_handler("error", lambda data: handle_error(data))
+            client.register_handler("response.text.delta", lambda data: handle_text_delta(data))
+            client.register_handler("response.created", lambda data: handle_response_created(data))
+            
+            openai_ready.set()
+            # Send status update to client
             await websocket.send_text(json.dumps({
-                "type": "text",
-                "content": data.get("delta", ""),
-                "isNewResponse": False
+                "type": "status",
+                "status": "ready"
             }))
-            logger.info("Handled response.text.delta")
-
-        async def handle_response_created(data):
-            await websocket.send_text(json.dumps({
-                "type": "text",
-                "content": "",
-                "isNewResponse": True
-            }))
-            logger.info("Handled response.created")
-
-        async def handle_error(data):
-            error_msg = data.get("error", {}).get("message", "Unknown error")
-            logger.error(f"OpenAI error: {error_msg}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to connect to OpenAI: {e}")
             await websocket.send_text(json.dumps({
                 "type": "error",
-                "content": error_msg
+                "content": "Failed to initialize OpenAI connection"
             }))
-            logger.info("Handled error message from OpenAI")
+            return False
 
-        async def handle_response_done(data):
-            logger.info("Handled response.done")
-            # Signal that recording has stopped and processing is complete
-            recording_stopped.set()
-            # You can implement logic to notify the client that the response is complete
+    # Move the handler definitions here (before initialize_openai)
+    async def handle_text_delta(data):
+        await websocket.send_text(json.dumps({
+            "type": "text",
+            "content": data.get("delta", ""),
+            "isNewResponse": False
+        }))
+        logger.info("Handled response.text.delta")
 
-        async def handle_generic_event(event_type, data):
-            logger.info(f"Handled {event_type} with data: {json.dumps(data, ensure_ascii=False)}")
+    async def handle_response_created(data):
+        await websocket.send_text(json.dumps({
+            "type": "text",
+            "content": "",
+            "isNewResponse": True
+        }))
+        logger.info("Handled response.created")
 
-        # Replace individual handlers with generic handler
-        client.register_handler("session.updated", lambda data: handle_generic_event("session.updated", data))
-        client.register_handler("input_audio_buffer.cleared", lambda data: handle_generic_event("input_audio_buffer.cleared", data))
-        client.register_handler("input_audio_buffer.speech_started", lambda data: handle_generic_event("input_audio_buffer.speech_started", data))
-        client.register_handler("rate_limits.updated", lambda data: handle_generic_event("rate_limits.updated", data))
-        client.register_handler("response.output_item.added", lambda data: handle_generic_event("response.output_item.added", data))
-        client.register_handler("conversation.item.created", lambda data: handle_generic_event("conversation.item.created", data))
-        client.register_handler("response.content_part.added", lambda data: handle_generic_event("response.content_part.added", data))
-        client.register_handler("response.text.done", lambda data: handle_generic_event("response.text.done", data))
-        client.register_handler("response.content_part.done", lambda data: handle_generic_event("response.content_part.done", data))
-        client.register_handler("response.output_item.done", lambda data: handle_generic_event("response.output_item.done", data))
-        client.register_handler("response.done", lambda data: handle_response_done(data))
-        client.register_handler("error", lambda data: handle_error(data))
-        client.register_handler("response.text.delta", lambda data: handle_text_delta(data))
-        client.register_handler("response.created", lambda data: handle_response_created(data))
+    async def handle_error(data):
+        error_msg = data.get("error", {}).get("message", "Unknown error")
+        logger.error(f"OpenAI error: {error_msg}")
+        await websocket.send_text(json.dumps({
+            "type": "error",
+            "content": error_msg
+        }))
+        logger.info("Handled error message from OpenAI")
 
-        # Create a queue to handle incoming audio chunks
-        audio_queue = asyncio.Queue()
+    async def handle_response_done(data):
+        logger.info("Handled response.done")
+        recording_stopped.set()
 
-        async def receive_messages():
-            while True:
-                if websocket.client_state == WebSocketState.DISCONNECTED:
-                    logger.info("WebSocket client disconnected")
-                    await audio_queue.put(None)  # Signal send_audio_messages to exit
-                    break
-                try:
-                    data = await websocket.receive()
-                    logger.info(f"Received message type: {data['type']}")
+    async def handle_generic_event(event_type, data):
+        logger.info(f"Handled {event_type} with data: {json.dumps(data, ensure_ascii=False)}")
 
-                    if "bytes" in data:
-                        chunk_size = len(data["bytes"])
-                        logger.info(f"Received audio chunk, size: {chunk_size} bytes")
+    # Create a queue to handle incoming audio chunks
+    audio_queue = asyncio.Queue()
+
+    async def receive_messages():
+        nonlocal client
+        
+        while True:
+            if websocket.client_state == WebSocketState.DISCONNECTED:
+                logger.info("WebSocket client disconnected")
+                break
+            try:
+                data = await websocket.receive()
+                
+                if "bytes" in data:
+                    processed_audio = audio_processor.process_audio_chunk(data["bytes"])
+                    if not openai_ready.is_set():
+                        logger.info("OpenAI not ready, buffering audio chunk")
+                        pending_audio_chunks.append(processed_audio)
+                    elif client:
+                        await client.send_audio(processed_audio)
+                        await websocket.send_text(json.dumps({
+                            "type": "status",
+                            "status": "connected"
+                        }))
+                        logger.info(f"Sent audio chunk, size: {len(processed_audio)} bytes")
+                    else:
+                        logger.warning("Received audio but client is not initialized")
                         
-                        processed_audio = audio_processor.process_audio_chunk(data["bytes"])
-                        logger.info(f"Processed audio chunk, length: {len(processed_audio)} bytes")
-                        await audio_queue.put(processed_audio)
+                elif "text" in data:
+                    msg = json.loads(data["text"])
+                    
+                    if msg.get("type") == "start_recording":
+                        # Update status to connecting while initializing OpenAI
+                        await websocket.send_text(json.dumps({
+                            "type": "status",
+                            "status": "connecting"
+                        }))
+                        if not await initialize_openai():
+                            continue
+                        recording_stopped.clear()
+                        pending_audio_chunks.clear()
                         
-                    elif "text" in data:
-                        msg = json.loads(data["text"])
-                        msg_type = msg.get("type")
-                        logger.info(f"Received text message: {msg_type}")
+                        # Send any buffered chunks
+                        if pending_audio_chunks and client:
+                            logger.info(f"Sending {len(pending_audio_chunks)} buffered chunks")
+                            for chunk in pending_audio_chunks:
+                                await client.send_audio(chunk)
+                            pending_audio_chunks.clear()
                         
-                        if msg_type == "start_recording":
-                            logger.info("Starting new recording")
-                            recording_stopped.clear()  # Reset the event
-                            await client.clear_audio_buffer()
-                            
-                        elif msg_type == "stop_recording":
-                            logger.info("Stopping recording and generating response")
-                            
-                            # Save the audio buffer to a file
-                            # if audio_buffer:
-                            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                            #     filename = f"debug_audio_{timestamp}.wav"
-                            #     audio_processor.save_audio_buffer(audio_buffer, filename)
-                            
+                    elif msg.get("type") == "stop_recording":
+                        if client:
                             await client.commit_audio()
                             await client.start_response(PROMPTS['paraphrase-gpt-realtime'])
-                            
-                            # Signal that no more audio chunks will be sent
-                            recording_stopped.set()
-                            
-                            # Wait until all audio chunks are processed
                             await recording_stopped.wait()
-                            
-                            # Clear the audio buffer after saving
-                            audio_buffer.clear()
+                            # Close OpenAI connection after response
+                            await client.close()
+                            client = None
+                            openai_ready.clear()
+                            # Update client status
+                            await websocket.send_text(json.dumps({
+                                "type": "status",
+                                "status": "idle"
+                            }))
 
-                except websockets.exceptions.ConnectionClosed:
-                    logger.info("WebSocket connection closed by client")
-                    await audio_queue.put(None)  # Signal send_audio_messages to exit
+            except Exception as e:
+                logger.error(f"Error in receive_messages: {str(e)}", exc_info=True)
+                break
+
+    async def send_audio_messages():
+        while True:
+            try:
+                processed_audio = await audio_queue.get()
+                if processed_audio is None:
                     break
-                except Exception as e:
-                    logger.error(f"Error in receive_messages: {str(e)}", exc_info=True)
-                    await websocket.send_text(json.dumps({
-                        "type": "error",
-                        "content": "Internal server error"
-                    }))
-                    break
+                
+                # Add validation
+                if len(processed_audio) == 0:
+                    logger.warning("Empty audio chunk received, skipping")
+                    continue
+                
+                # Append the processed audio to the buffer
+                audio_buffer.append(processed_audio)
 
-        async def send_audio_messages():
-            while True:
-                try:
-                    processed_audio = await audio_queue.get()
-                    if processed_audio is None:
-                        break
-                    
-                    # Add validation
-                    if len(processed_audio) == 0:
-                        logger.warning("Empty audio chunk received, skipping")
-                        continue
-                    
-                    # Append the processed audio to the buffer
-                    audio_buffer.append(processed_audio)
+                await client.send_audio(processed_audio)
+                logger.info(f"Audio chunk sent to OpenAI client, size: {len(processed_audio)} bytes")
+                
+            except Exception as e:
+                logger.error(f"Error in send_audio_messages: {str(e)}", exc_info=True)
+                break
 
-                    await client.send_audio(processed_audio)
-                    logger.info(f"Audio chunk sent to OpenAI client, size: {len(processed_audio)} bytes")
-                    
-                except Exception as e:
-                    logger.error(f"Error in send_audio_messages: {str(e)}", exc_info=True)
-                    break
+        # After processing all audio, set the event
+        recording_stopped.set()
 
-            # After processing all audio, set the event
-            recording_stopped.set()
+    # Start concurrent tasks for receiving and sending
+    receive_task = asyncio.create_task(receive_messages())
+    send_task = asyncio.create_task(send_audio_messages())
 
-        # Start concurrent tasks for receiving and sending
-        receive_task = asyncio.create_task(receive_messages())
-        send_task = asyncio.create_task(send_audio_messages())
-
+    try:
         # Wait for both tasks to complete
         await asyncio.gather(receive_task, send_task)
-    
     finally:
-        await client.close()
-        logger.info("OpenAI client connection closed")
+        if client:
+            await client.close()
+            logger.info("OpenAI client connection closed")
 
 class ReadabilityRequest(BaseModel):
     text: str = Field(..., description="The text to improve readability for.")

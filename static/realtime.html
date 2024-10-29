@@ -136,6 +136,14 @@
         .connection-status.connected {
             background-color: #34C759;  /* Green when connected */
         }
+        .connection-status.connecting {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -268,12 +276,25 @@
         }
 
         // WebSocket handling
-        function updateConnectionStatus(connected) {
+        function updateConnectionStatus(status) {
             const statusDot = document.getElementById('connectionStatus');
-            if (connected) {
-                statusDot.classList.add('connected');
-            } else {
-                statusDot.classList.remove('connected');
+            statusDot.classList.remove('connected', 'connecting', 'idle');
+            
+            switch (status) {
+                case 'connected':  // OpenAI is connected and ready
+                    statusDot.classList.add('connected');
+                    statusDot.style.backgroundColor = '#34C759';  // Green
+                    break;
+                case 'connecting':  // Establishing OpenAI connection
+                    statusDot.classList.add('connecting');
+                    statusDot.style.backgroundColor = '#FF9500';  // Orange
+                    break;
+                case 'idle':  // Client connected, OpenAI not connected
+                    statusDot.classList.add('idle');
+                    statusDot.style.backgroundColor = '#007AFF';  // Blue
+                    break;
+                default:  // Disconnected
+                    statusDot.style.backgroundColor = '#FF3B30';  // Red
             }
         }
 
@@ -289,15 +310,24 @@
             
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                if (data.type === 'text') {
-                    if (data.isNewResponse) {
-                        transcript.value = data.content;
-                        stopTimer();
-                    } else {
-                        transcript.value += data.content;
-                    }
-                    if (!isMobileDevice()) copyToClipboard(transcript.value, copyButton);
-                    transcript.scrollTop = transcript.scrollHeight;
+                switch (data.type) {
+                    case 'status':
+                        updateConnectionStatus(data.status);
+                        break;
+                    case 'text':
+                        if (data.isNewResponse) {
+                            transcript.value = data.content;
+                            stopTimer();
+                        } else {
+                            transcript.value += data.content;
+                        }
+                        if (!isMobileDevice()) copyToClipboard(transcript.value, copyButton);
+                        transcript.scrollTop = transcript.scrollHeight;
+                        break;
+                    case 'error':
+                        alert(data.content);
+                        updateConnectionStatus('idle');
+                        break;
                 }
             };
             
