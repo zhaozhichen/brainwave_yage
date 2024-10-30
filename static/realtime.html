@@ -195,20 +195,12 @@
 
         async function copyToClipboard(text, button) {
             if (!text) return;
-
-            if (isMobileDevice()) {
-                const textArea = document.getElementById('transcript');
-                textArea.focus();
-                textArea.setSelectionRange(0, textArea.value.length);
-                showCopiedFeedback(button, 'Text Selected!');
-                return;
-            }
-
             try {
                 await navigator.clipboard.writeText(text);
                 showCopiedFeedback(button, 'Copied!');
             } catch (err) {
                 console.error('Clipboard copy failed:', err);
+                alert('Clipboard copy failed: ' + err.message);
             }
         }
 
@@ -216,7 +208,9 @@
             if (!button) return;
             const originalText = button.textContent;
             button.textContent = message;
-            setTimeout(() => button.textContent = originalText, 2000);
+            setTimeout(() => {
+                button.textContent = originalText;
+            }, 2000);
         }
 
         // Timer functions
@@ -394,7 +388,6 @@
 
         // Event listeners
         recordButton.onclick = () => isRecording ? stopRecording() : startRecording();
-        
         copyButton.onclick = () => copyToClipboard(transcript.value, copyButton);
         copyEnhancedButton.onclick = () => copyToClipboard(enhancedTranscript.value, copyEnhancedButton);
 
