@@ -127,7 +127,7 @@ function updateConnectionStatus(status) {
 
 function initializeWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
+    ws = new WebSocket(`${protocol}://${window.location.host}/api/v1/ws`);
     
     ws.onopen = () => {
         wsConnected = true;
@@ -252,7 +252,7 @@ readabilityButton.onclick = async () => {
     }
 
     try {
-        const response = await fetch('/readability', {
+        const response = await fetch('/api/v1/readability', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: inputText })
@@ -292,7 +292,7 @@ askAIButton.onclick = async () => {
     }
 
     try {
-        const response = await fetch('/ask_ai', {
+        const response = await fetch('/api/v1/ask_ai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: inputText })
@@ -322,7 +322,7 @@ correctnessButton.onclick = async () => {
     }
 
     try {
-        const response = await fetch('/correctness', {
+        const response = await fetch('/api/v1/correctness', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: inputText })

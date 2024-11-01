@@ -92,7 +92,7 @@ class AudioProcessor:
             wf.writeframes(b''.join(audio_buffer))
         logger.info(f"Saved audio buffer to {filename}")
 
-@app.websocket("/ws")
+@app.websocket("/api/v1/ws")
 async def websocket_endpoint(websocket: WebSocket):
     logger.info("New WebSocket connection attempt")
     await websocket.accept()
@@ -322,7 +322,7 @@ async def websocket_endpoint(websocket: WebSocket):
             logger.info("OpenAI client connection closed")
 
 @app.post(
-    "/readability",
+    "/api/v1/readability",
     response_model=ReadabilityResponse,
     summary="Enhance Text Readability",
     description="Improve the readability of the provided text using GPT-4."
@@ -345,7 +345,7 @@ async def enhance_readability(request: ReadabilityRequest):
         raise HTTPException(status_code=500, detail="Error processing readability enhancement.")
 
 @app.post(
-    "/ask_ai",
+    "/api/v1/ask_ai",
     response_model=AskAIResponse,
     summary="Ask AI a Question",
     description="Ask AI to provide insights using O1-mini model."
@@ -364,7 +364,7 @@ def ask_ai(request: AskAIRequest):
         raise HTTPException(status_code=500, detail="Error processing AI question.")
 
 @app.post(
-    "/correctness",
+    "/api/v1/correctness",
     response_model=CorrectnessResponse,
     summary="Check Factual Correctness",
     description="Analyze the text for factual accuracy using GPT-4o."
