@@ -91,8 +91,8 @@ textarea {
 }
 
 .action-button {
-    flex: 1 1 150px;
-    max-width: 200px;
+    flex: 0 1 120px;
+    max-width: 150px;
     height: 50px;
     border-radius: 8px;
     background-color: #007AFF;
@@ -147,10 +147,10 @@ textarea {
     }
 
     .action-button {
-        flex: 1 1 45%;
-        max-width: 45%;
-        height: 45px;
-        font-size: 0.9rem;
+        flex: 0 1 100px;
+        max-width: 100px;
+        height: 40px;
+        font-size: 0.85rem;
     }
 }
 

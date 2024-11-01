@@ -16,6 +16,7 @@ const copyButton = document.getElementById('copyButton');
 const copyEnhancedButton = document.getElementById('copyEnhancedButton');
 const readabilityButton = document.getElementById('readabilityButton');
 const askAIButton = document.getElementById('askAIButton');
+const correctnessButton = document.getElementById('correctnessButton');
 
 // Configuration
 const targetSeconds = 5;
@@ -307,6 +308,46 @@ askAIButton.onclick = async () => {
     } catch (error) {
         console.error('Error:', error);
         alert('Error asking AI');
+        stopTimer();
+    }
+};
+
+correctnessButton.onclick = async () => {
+    startTimer();
+    const inputText = transcript.value.trim();
+    if (!inputText) {
+        alert('Please enter text to check for correctness.');
+        stopTimer();
+        return;
+    }
+
+    try {
+        const response = await fetch('/correctness', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: inputText })
+        });
+
+        if (!response.ok) throw new Error('Correctness check failed');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullText += decoder.decode(value, { stream: true });
+            enhancedTranscript.value = fullText;
+            enhancedTranscript.scrollTop = enhancedTranscript.scrollHeight;
+        }
+
+        if (!isMobileDevice()) copyToClipboard(fullText, copyEnhancedButton);
+        stopTimer();
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error checking correctness');
         stopTimer();
     }
 };

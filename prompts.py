@@ -12,4 +12,18 @@ PROMPTS = {
     first, how can you extend this topic to enhance its depth and convincing power? Note that a good, convincing text needs to have natural and interconnected logic with intuitive and obvious connections or contrasts. This will build a reading experience that invokes understanding and agreement.
     
     Second, can you offer a thought-provoking challenge to the user's perspective? Your response doesn't need to be exhaustive or overly detailed. The main goal is to inspire thought and easily convince the audience. Embrace surprising and creative angles.\n\nBelow is the text from the user:""",
+
+    'correctness-check': """Analyze the following text for factual accuracy. Focus on:
+1. Identifying any factual errors or inaccurate statements
+2. Checking the accuracy of any claims or assertions
+
+Provide a clear, concise response that:
+- Points out any inaccuracies found
+- Suggests corrections where needed
+- Confirms accurate statements
+- Flags any claims that need verification
+
+Keep the tone professional but friendly. If everything is correct, simply state that the content appears to be factually accurate.
+
+Below is the text to analyze:""",
 }

@@ -26,6 +26,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Pydantic models for request and response schemas
+class ReadabilityRequest(BaseModel):
+    text: str = Field(..., description="The text to improve readability for.")
+
+class ReadabilityResponse(BaseModel):
+    enhanced_text: str = Field(..., description="The text with improved readability.")
+
+class CorrectnessRequest(BaseModel):
+    text: str = Field(..., description="The text to check for factual correctness.")
+
+class CorrectnessResponse(BaseModel):
+    analysis: str = Field(..., description="The factual correctness analysis.")
+
+class AskAIRequest(BaseModel):
+    text: str = Field(..., description="The question to ask AI.")
+
+class AskAIResponse(BaseModel):
+    answer: str = Field(..., description="AI's answer to the question.")
+
 app = FastAPI()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -302,12 +321,6 @@ async def websocket_endpoint(websocket: WebSocket):
             await client.close()
             logger.info("OpenAI client connection closed")
 
-class ReadabilityRequest(BaseModel):
-    text: str = Field(..., description="The text to improve readability for.")
-
-class ReadabilityResponse(BaseModel):
-    enhanced_text: str = Field(..., description="The text with improved readability.")
-
 @app.post(
     "/readability",
     response_model=ReadabilityResponse,
@@ -331,12 +344,6 @@ async def enhance_readability(request: ReadabilityRequest):
         logger.error(f"Error enhancing readability: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error processing readability enhancement.")
 
-class AskAIRequest(BaseModel):
-    text: str = Field(..., description="The question to ask AI.")
-
-class AskAIResponse(BaseModel):
-    answer: str = Field(..., description="AI's answer to the question.")
-
 @app.post(
     "/ask_ai",
     response_model=AskAIResponse,
@@ -355,6 +362,29 @@ def ask_ai(request: AskAIRequest):
     except Exception as e:
         logger.error(f"Error processing AI question: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error processing AI question.")
+
+@app.post(
+    "/correctness",
+    response_model=CorrectnessResponse,
+    summary="Check Factual Correctness",
+    description="Analyze the text for factual accuracy using GPT-4o."
+)
+async def check_correctness(request: CorrectnessRequest):
+    prompt = PROMPTS.get('correctness-check')
+    if not prompt:
+        raise HTTPException(status_code=500, detail="Correctness prompt not found.")
+
+    try:
+        async def text_generator():
+            # Specifically use gpt-4o for correctness checking
+            async for part in llm_processor.process_text(request.text, prompt, model="gpt-4o"):
+                yield part
+
+        return StreamingResponse(text_generator(), media_type="text/plain")
+
+    except Exception as e:
+        logger.error(f"Error checking correctness: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing correctness check.")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=3005)
