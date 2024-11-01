@@ -33,7 +33,8 @@ async function copyToClipboard(text, button) {
         showCopiedFeedback(button, 'Copied!');
     } catch (err) {
         console.error('Clipboard copy failed:', err);
-        alert('Clipboard copy failed: ' + err.message);
+        // alert('Clipboard copy failed: ' + err.message);
+        // We don't show this message because it's not accurate. We could still write to the clipboard in this case.
     }
 }
 
