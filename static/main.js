@@ -237,9 +237,9 @@ document.addEventListener('keydown', (event) => {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     initializeWebSocket();
+    initializeTheme();
     if (autoStart) initializeAudioStream();
 });
-
 // Readability and AI handlers
 readabilityButton.onclick = async () => {
     startTimer();
@@ -310,3 +310,30 @@ askAIButton.onclick = async () => {
         stopTimer();
     }
 };
+
+// Theme handling
+function toggleTheme() {
+    const body = document.body;
+    const themeToggle = document.getElementById('themeToggle');
+    const isDarkTheme = body.classList.toggle('dark-theme');
+    
+    // Update button text
+    themeToggle.textContent = isDarkTheme ? '☀️' : '🌙';
+    
+    // Save preference to localStorage
+    localStorage.setItem('darkTheme', isDarkTheme);
+}
+
+// Initialize theme from saved preference
+function initializeTheme() {
+    const darkTheme = localStorage.getItem('darkTheme') === 'true';
+    const themeToggle = document.getElementById('themeToggle');
+    
+    if (darkTheme) {
+        document.body.classList.add('dark-theme');
+        themeToggle.textContent = '☀️';
+    }
+}
+
+// Add to your existing event listeners
+document.getElementById('themeToggle').onclick = toggleTheme;

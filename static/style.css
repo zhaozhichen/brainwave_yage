@@ -208,3 +208,40 @@ body.dark-theme .copy-button {
         opacity: 1;
     }
 }
+
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+}
+
+/* Dark theme specific styles */
+body.dark-theme .container {
+    background: #2c2c2e;
+    color: #f5f5f7;
+}
+
+body.dark-theme textarea {
+    background: #1c1c1e;
+    color: #f5f5f7;
+    border-color: #3a3a3c;
+}
+
+body.dark-theme .action-button {
+    background-color: #34C759;
+}
+
+body.dark-theme .action-button:hover {
+    background-color: #248a3d;
+}
