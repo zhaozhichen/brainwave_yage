@@ -5,6 +5,7 @@
 1. [Introduction](#introduction)
 2. [Deployment](#deployment)
 3. [Code Structure & Architecture](#code-structure--architecture)
+4. [Testing](#testing)
 
 ---
 
@@ -189,6 +190,49 @@ Comprehensive logging is integrated throughout the backend components to monitor
 - **Connection Status:** Tracks WebSocket connections and disconnections.
 - **Data Transmission:** Logs the size and status of audio chunks being processed and sent.
 - **Error Reporting:** Captures and logs any errors or exceptions, facilitating easier debugging and maintenance.
+
+---
+
+## Testing
+
+Brainwave includes a comprehensive test suite to ensure reliability and maintainability. The tests cover various components:
+
+- **Audio Processing Tests:** Verify the correct handling of audio data, including resampling and buffer management.
+- **LLM Integration Tests:** Test the integration with language models (GPT and Gemini) for text processing.
+- **API Endpoint Tests:** Ensure the FastAPI endpoints work correctly, including streaming responses.
+- **WebSocket Tests:** Verify real-time communication for audio streaming.
+
+To run the tests:
+
+1. **Install Test Dependencies**
+
+   The test dependencies are included in `requirements.txt`. Make sure you have them installed:
+   ```bash
+   pip install pytest pytest-asyncio pytest-mock httpx
+   ```
+
+2. **Run Tests**
+
+   ```bash
+   # Run all tests
+   pytest tests/
+
+   # Run tests with verbose output
+   pytest -v tests/
+
+   # Run tests for a specific component
+   pytest tests/test_audio_processor.py
+   ```
+
+3. **Test Environment**
+
+   Tests use mocked API clients to avoid actual API calls. Set up the test environment variables:
+   ```bash
+   export OPENAI_API_KEY='test_key'  # For local testing
+   export GOOGLE_API_KEY='test_key'  # For local testing
+   ```
+
+The test suite is designed to run without making actual API calls, making it suitable for CI/CD pipelines.
 
 ---
 

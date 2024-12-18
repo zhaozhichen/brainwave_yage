@@ -49,13 +49,12 @@ class GeminiProcessor(LLMProcessor):
         return response.text
 
 class GPTProcessor(LLMProcessor):
-    def __init__(self, default_model: str = 'gpt-4o'):
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise EnvironmentError("OPENAI_API_KEY is not set")
-        self.async_client = AsyncOpenAI(api_key=api_key)
-        self.sync_client = OpenAI(api_key=api_key)
-        self.default_model = default_model
+    def __init__(self):
+        if not os.getenv("OPENAI_API_KEY"):
+            raise ValueError("OpenAI API key not found in environment variables")
+        self.async_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.sync_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.default_model = "gpt-4"
 
     async def process_text(self, text: str, prompt: str, model: Optional[str] = None) -> AsyncGenerator[str, None]:
         all_prompt = f"{prompt}\n\n{text}"
@@ -91,6 +90,6 @@ def get_llm_processor(model: str) -> LLMProcessor:
     if model.startswith(('gemini', 'gemini-')):
         return GeminiProcessor(default_model=model)
     elif model.startswith(('gpt-', 'o1-')):
-        return GPTProcessor(default_model=model)
+        return GPTProcessor()
     else:
         raise ValueError(f"Unsupported model type: {model}")
