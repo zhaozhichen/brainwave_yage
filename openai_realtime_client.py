@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class OpenAIRealtimeAudioTextClient:
-    def __init__(self, api_key: str, model: str = "gpt-4o-realtime-preview-2024-10-01"):
+    def __init__(self, api_key: str, model: str = "gpt-4o-realtime-preview"):
         self.api_key = api_key
         self.model = model
         self.ws = None

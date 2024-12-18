@@ -141,6 +141,9 @@ function initializeWebSocket() {
         switch (data.type) {
             case 'status':
                 updateConnectionStatus(data.status);
+                if (data.status === 'idle') {
+                    copyToClipboard(transcript.value, copyButton);
+                }
                 break;
             case 'text':
                 if (data.isNewResponse) {
@@ -149,7 +152,6 @@ function initializeWebSocket() {
                 } else {
                     transcript.value += data.content;
                 }
-                if (!isMobileDevice()) copyToClipboard(transcript.value, copyButton);
                 transcript.scrollTop = transcript.scrollHeight;
                 break;
             case 'error':
