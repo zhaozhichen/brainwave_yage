@@ -6,3 +6,6 @@ numpy
 websockets
 scipy
 google-generativeai
+pytest
+pytest-asyncio
+pytest-mock
