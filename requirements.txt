@@ -3,7 +3,7 @@ fastapi
 uvicorn
 python-multipart
 numpy
-websockets
+websockets<14
 scipy
 google-generativeai
 pytest
