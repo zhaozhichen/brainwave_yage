@@ -1,6 +1,2 @@
-openai
 fastapi
 uvicorn
-python-multipart
-google-generativeai
-httpx
