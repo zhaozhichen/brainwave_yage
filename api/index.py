@@ -1,22 +1,17 @@
-import os
-import logging
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from http.server import BaseHTTPRequestHandler
+import json
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return {"message": "Brainwave API is running", "status": "healthy"}
-
-@app.get("/test")
-async def test():
-    return {"message": "Test endpoint working"}
-
-# Standard Vercel Python handler
-from mangum import Adapter
-handler = Adapter(app) 
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        
+        response = {
+            "message": "Brainwave API is running",
+            "status": "healthy",
+            "path": self.path
+        }
+        
+        self.wfile.write(json.dumps(response).encode())
+        return 
