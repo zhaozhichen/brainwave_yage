@@ -1,12 +1,13 @@
 import os
 import logging
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Brainwave API", version="1.0.0")
+app = FastAPI()
 
 @app.get("/")
 async def root():
@@ -16,5 +17,6 @@ async def root():
 async def test():
     return {"message": "Test endpoint working"}
 
-# Vercel handler
-handler = app 
+# Standard Vercel Python handler
+from mangum import Adapter
+handler = Adapter(app) 
