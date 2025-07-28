@@ -2,19 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "realtime_server.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "realtime_server.py"
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
     }
-  ],
-  "functions": {
-    "realtime_server.py": {
-      "maxDuration": 30
-    }
-  }
- }
+  ]
+}
