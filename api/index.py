@@ -112,4 +112,7 @@ async def check_correctness(request: CorrectnessRequest):
 
     except Exception as e:
         logger.error(f"Error checking correctness: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Error processing correctness check.") 
+        raise HTTPException(status_code=500, detail="Error processing correctness check.")
+
+# Vercel handler
+handler = app 
