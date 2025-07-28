@@ -6,6 +6,38 @@ from openai import OpenAI
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
+            # Serve the UI for root path
+            if self.path == "/":
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                
+                # Read and serve the HTML file
+                try:
+                    with open('static/index.html', 'r', encoding='utf-8') as f:
+                        html_content = f.read()
+                    self.wfile.write(html_content.encode('utf-8'))
+                except FileNotFoundError:
+                    # Fallback to JSON response if HTML file not found
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    
+                    response = {
+                        "message": "Brainwave API is running",
+                        "status": "healthy",
+                        "path": self.path,
+                        "environment": "vercel",
+                        "endpoints": {
+                            "readability": "/api/v1/readability",
+                            "ask_ai": "/api/v1/ask_ai", 
+                            "correctness": "/api/v1/correctness"
+                        }
+                    }
+                    self.wfile.write(json.dumps(response).encode())
+                return
+            
+            # API endpoints
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')

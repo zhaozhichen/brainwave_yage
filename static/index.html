@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brainwave API - AI Text Processing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .result-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+
+        .status {
+            text-align: center;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #2d5a2d;
+        }
+
+        .api-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .api-status.online {
+            background: #27ae60;
+        }
+
+        .api-status.offline {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Brainwave API</h1>
+            <p>AI-Powered Text Processing & Analysis</p>
+        </div>
+
+        <div class="content">
+            <div class="status" id="status">
+                <span class="api-status" id="apiStatus"></span>
+                <span id="statusText">Checking API status...</span>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('readability')">📝 Readability</button>
+                <button class="tab" onclick="showTab('ask-ai')">🤖 Ask AI</button>
+                <button class="tab" onclick="showTab('correctness')">✅ Fact Check</button>
+            </div>
+
+            <!-- Readability Tab -->
+            <div id="readability" class="tab-content active">
+                <h2>Enhance Text Readability</h2>
+                <p style="margin-bottom: 20px; color: #666;">Improve the structure, clarity, and flow of your text using GPT-4o.</p>
+                
+                <div class="form-group">
+                    <label for="readability-text">Text to enhance:</label>
+                    <textarea id="readability-text" placeholder="Enter your text here..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="processReadability()">Enhance Readability</button>
+                
+                <div id="readability-result" class="result" style="display: none;">
+                    <h3>Enhanced Text:</h3>
+                    <div class="result-content" id="readability-content"></div>
+                </div>
+            </div>
+
+            <!-- Ask AI Tab -->
+            <div id="ask-ai" class="tab-content">
+                <h2>Ask AI</h2>
+                <p style="margin-bottom: 20px; color: #666;">Get thoughtful insights and perspectives using O1-mini.</p>
+                
+                <div class="form-group">
+                    <label for="ask-ai-text">Your question or statement:</label>
+                    <textarea id="ask-ai-text" placeholder="Ask a question or share a statement..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="processAskAI()">Ask AI</button>
+                
+                <div id="ask-ai-result" class="result" style="display: none;">
+                    <h3>AI Response:</h3>
+                    <div class="result-content" id="ask-ai-content"></div>
+                </div>
+            </div>
+
+            <!-- Correctness Tab -->
+            <div id="correctness" class="tab-content">
+                <h2>Fact Check</h2>
+                <p style="margin-bottom: 20px; color: #666;">Analyze text for factual accuracy using GPT-4o.</p>
+                
+                <div class="form-group">
+                    <label for="correctness-text">Text to fact-check:</label>
+                    <textarea id="correctness-text" placeholder="Enter text to check for factual accuracy..."></textarea>
+                </div>
+                
+                <button class="btn" onclick="processCorrectness()">Check Facts</button>
+                
+                <div id="correctness-result" class="result" style="display: none;">
+                    <h3>Factual Analysis:</h3>
+                    <div class="result-content" id="correctness-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check API status on load
+        window.onload = function() {
+            checkApiStatus();
+        };
+
+        function checkApiStatus() {
+            fetch('/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('apiStatus').className = 'api-status online';
+                    document.getElementById('statusText').textContent = 'API is online and ready';
+                    document.getElementById('status').style.background = '#e8f5e8';
+                    document.getElementById('status').style.color = '#2d5a2d';
+                })
+                .catch(error => {
+                    document.getElementById('apiStatus').className = 'api-status offline';
+                    document.getElementById('statusText').textContent = 'API is offline';
+                    document.getElementById('status').style.background = '#fee';
+                    document.getElementById('status').style.color = '#c0392b';
+                });
+        }
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function processReadability() {
+            const text = document.getElementById('readability-text').value.trim();
+            if (!text) {
+                alert('Please enter some text to enhance.');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            fetch('/api/v1/readability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.message || 'An error occurred');
+                }
+                document.getElementById('readability-content').textContent = data.enhanced_text;
+                document.getElementById('readability-result').style.display = 'block';
+            })
+            .catch(error => {
+                document.getElementById('readability-content').textContent = 'Error: ' + error.message;
+                document.getElementById('readability-result').classList.add('error');
+                document.getElementById('readability-result').style.display = 'block';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Enhance Readability';
+            });
+        }
+
+        function processAskAI() {
+            const text = document.getElementById('ask-ai-text').value.trim();
+            if (!text) {
+                alert('Please enter a question or statement.');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            fetch('/api/v1/ask_ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.message || 'An error occurred');
+                }
+                document.getElementById('ask-ai-content').textContent = data.answer;
+                document.getElementById('ask-ai-result').style.display = 'block';
+            })
+            .catch(error => {
+                document.getElementById('ask-ai-content').textContent = 'Error: ' + error.message;
+                document.getElementById('ask-ai-result').classList.add('error');
+                document.getElementById('ask-ai-result').style.display = 'block';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Ask AI';
+            });
+        }
+
+        function processCorrectness() {
+            const text = document.getElementById('correctness-text').value.trim();
+            if (!text) {
+                alert('Please enter text to fact-check.');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            fetch('/api/v1/correctness', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.message || 'An error occurred');
+                }
+                document.getElementById('correctness-content').textContent = data.analysis;
+                document.getElementById('correctness-result').style.display = 'block';
+            })
+            .catch(error => {
+                document.getElementById('correctness-content').textContent = 'Error: ' + error.message;
+                document.getElementById('correctness-result').classList.add('error');
+                document.getElementById('correctness-result').style.display = 'block';
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = 'Check Facts';
+            });
+        }
+    </script>
+</body>
+</html> 
