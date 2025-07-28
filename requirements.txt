@@ -2,10 +2,5 @@ openai
 fastapi
 uvicorn
 python-multipart
-numpy
-scipy
 google-generativeai
-pytest
-pytest-asyncio
-pytest-mock
 httpx
