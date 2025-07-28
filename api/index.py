@@ -1,21 +1,55 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
-from mangum import Adapter
+from http.server import BaseHTTPRequestHandler
+import json
 import os
 
-app = FastAPI(title="Brainwave API", version="1.0.0")
-
-@app.get("/")
-async def root():
-    return {"message": "Brainwave API is running", "status": "healthy"}
-
-@app.get("/test")
-async def test():
-    return {"message": "Test endpoint working"}
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "environment": "vercel"}
-
-# Vercel handler
-handler = Adapter(app) 
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            response = {
+                "message": "Brainwave API is running",
+                "status": "healthy",
+                "path": self.path,
+                "environment": "vercel"
+            }
+            
+            self.wfile.write(json.dumps(response).encode())
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            error_response = {
+                "error": "Internal server error",
+                "message": str(e)
+            }
+            self.wfile.write(json.dumps(error_response).encode())
+    
+    def do_POST(self):
+        try:
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            response = {
+                "message": "POST request received",
+                "path": self.path,
+                "method": "POST"
+            }
+            
+            self.wfile.write(json.dumps(response).encode())
+            
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            error_response = {
+                "error": "Internal server error",
+                "message": str(e)
+            }
+            self.wfile.write(json.dumps(error_response).encode()) 

@@ -1,2 +1,1 @@
-fastapi
-mangum
+# No external dependencies needed - using only standard library
