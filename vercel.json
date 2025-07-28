@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "realtime_server.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "realtime_server.py"
+    }
+  ],
+  "functions": {
+    "realtime_server.py": {
+      "maxDuration": 30
+    }
+  }
+ }
