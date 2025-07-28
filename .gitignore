@@ -1,4 +1,4 @@
 *.sh
 .windsurfrules
 scratchpad.md
-.env
+.envvenv/
